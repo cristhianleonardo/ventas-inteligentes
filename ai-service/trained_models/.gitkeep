@@ -1,0 +1,3 @@
+# Directorio para modelos entrenados
+# Los archivos .pkl y .joblib se ignoran en git (son grandes)
+

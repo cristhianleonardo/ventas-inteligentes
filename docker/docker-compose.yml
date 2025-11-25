@@ -1,0 +1,128 @@
+version: '3.8'
+
+services:
+  # PostgreSQL Database
+  postgres:
+    image: postgres:15-alpine
+    container_name: ventas-postgres
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-ventas_user}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-ventas_password}
+      POSTGRES_DB: ${POSTGRES_DB:-ventas_inteligentes}
+    ports:
+      - "${POSTGRES_PORT:-5432}:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-ventas_user}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - ventas-network
+
+  # Redis Cache
+  redis:
+    image: redis:7-alpine
+    container_name: ventas-redis
+    ports:
+      - "${REDIS_PORT:-6379}:6379"
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - ventas-network
+
+  # Backend API (Node.js)
+  backend:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile.backend
+    container_name: ventas-backend
+    environment:
+      NODE_ENV: ${NODE_ENV:-development}
+      POSTGRES_HOST: postgres
+      POSTGRES_PORT: 5432
+      POSTGRES_USER: ${POSTGRES_USER:-ventas_user}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-ventas_password}
+      POSTGRES_DB: ${POSTGRES_DB:-ventas_inteligentes}
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      JWT_SECRET: ${JWT_SECRET:-your-super-secret-jwt-key}
+      JWT_EXPIRES_IN: ${JWT_EXPIRES_IN:-7d}
+      AI_SERVICE_URL: http://ai-service:8000
+    ports:
+      - "${BACKEND_PORT:-3001}:3001"
+    volumes:
+      - ../backend:/app
+      - /app/node_modules
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - ventas-network
+    command: npm run dev
+
+  # AI Service (Python)
+  ai-service:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile.ai
+    container_name: ventas-ai
+    environment:
+      POSTGRES_HOST: postgres
+      POSTGRES_PORT: 5432
+      POSTGRES_USER: ${POSTGRES_USER:-ventas_user}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-ventas_password}
+      POSTGRES_DB: ${POSTGRES_DB:-ventas_inteligentes}
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+    ports:
+      - "${AI_SERVICE_PORT:-8000}:8000"
+    volumes:
+      - ../ai-service:/app
+      - ai_models:/app/trained_models
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - ventas-network
+    command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
+
+  # Frontend (React)
+  frontend:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile.frontend
+    container_name: ventas-frontend
+    environment:
+      VITE_API_URL: ${BACKEND_URL:-http://localhost:3001}
+      VITE_AI_SERVICE_URL: ${AI_SERVICE_URL:-http://localhost:8000}
+    ports:
+      - "${FRONTEND_PORT:-3000}:3000"
+    volumes:
+      - ../frontend:/app
+      - /app/node_modules
+    depends_on:
+      - backend
+    networks:
+      - ventas-network
+    command: npm run dev -- --host 0.0.0.0
+
+volumes:
+  postgres_data:
+  redis_data:
+  ai_models:
+
+networks:
+  ventas-network:
+    driver: bridge
+
