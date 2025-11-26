@@ -10,6 +10,7 @@ import userRoutes from './routes/user.routes';
 import productRoutes from './routes/product.routes';
 import cartRoutes from './routes/cart.routes';
 import orderRoutes from './routes/order.routes';
+import recommendationRoutes from './routes/recommendation.routes';
 
 dotenv.config();
 
@@ -37,6 +38,7 @@ app.use('/api/users', userRoutes);
 app.use('/api/products', productRoutes);
 app.use('/api/cart', cartRoutes);
 app.use('/api/orders', orderRoutes);
+app.use('/api/recommendations', recommendationRoutes);
 
 // Manejo de errores
 app.use(errorHandler);

@@ -11,6 +11,7 @@ import AdminDashboard from './pages/Admin/Dashboard';
 import AdminProducts from './pages/Admin/Products';
 import AdminUsers from './pages/Admin/Users';
 import AdminInventory from './pages/Admin/Inventory';
+import AIModel from './pages/Admin/AIModel';
 
 function App() {
   return (
@@ -27,6 +28,7 @@ function App() {
         <Route path="/admin/products" element={<AdminProducts />} />
         <Route path="/admin/users" element={<AdminUsers />} />
         <Route path="/admin/inventory" element={<AdminInventory />} />
+        <Route path="/admin/ai-model" element={<AIModel />} />
       </Routes>
     </Layout>
   );

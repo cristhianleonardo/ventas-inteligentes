@@ -1,8 +1,9 @@
-from fastapi import FastAPI
+from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 import os
 from dotenv import load_dotenv
+from app.services.recommendation_service import RecommendationService
 
 load_dotenv()
 
@@ -11,6 +12,9 @@ app = FastAPI(
     description="Servicio de recomendaciones inteligentes con IA",
     version="1.0.0"
 )
+
+# Inicializar servicio de recomendaciones
+recommendation_service = RecommendationService()
 
 # CORS
 app.add_middleware(
@@ -33,49 +37,96 @@ async def health_check():
 async def get_recommendations(user_id: str, limit: int = 10):
     """
     Obtiene recomendaciones de productos para un usuario.
-    
-    TODO: Implementar modelo de ML real
+    Usa Content-Based y Collaborative Filtering para alcanzar 80%+ de precisión.
     """
-    # Placeholder - implementar con modelo real
-    recommendations = [
-        {"product_id": f"prod_{i}", "score": 0.9 - (i * 0.1)}
-        for i in range(limit)
-    ]
-    
-    return JSONResponse({
-        "success": True,
-        "user_id": user_id,
-        "recommendations": recommendations,
-        "message": "Recomendaciones generadas (modelo pendiente de entrenamiento)"
-    })
+    try:
+        if not recommendation_service.is_trained:
+            return JSONResponse({
+                "success": False,
+                "message": "Modelo no entrenado. Ejecuta /api/recommendations/train primero"
+            }, status_code=503)
+        
+        recommendations = recommendation_service.get_recommendations(user_id, limit)
+        
+        return JSONResponse({
+            "success": True,
+            "user_id": user_id,
+            "recommendations": recommendations,
+            "count": len(recommendations)
+        })
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error al generar recomendaciones: {str(e)}")
 
 @app.get("/api/recommendations/product/{product_id}")
 async def get_similar_products(product_id: str, limit: int = 5):
     """
-    Obtiene productos similares a uno dado.
+    Obtiene productos similares a uno dado usando Content-Based Filtering.
     """
-    # Placeholder
-    similar = [
-        {"product_id": f"prod_{i}", "similarity": 0.9 - (i * 0.1)}
-        for i in range(limit)
-    ]
-    
-    return JSONResponse({
-        "success": True,
-        "product_id": product_id,
-        "similar_products": similar
-    })
+    try:
+        if not recommendation_service.is_trained:
+            return JSONResponse({
+                "success": False,
+                "message": "Modelo no entrenado"
+            }, status_code=503)
+        
+        similar = recommendation_service.get_similar_products(product_id, limit)
+        
+        return JSONResponse({
+            "success": True,
+            "product_id": product_id,
+            "similar_products": similar,
+            "count": len(similar)
+        })
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error al obtener productos similares: {str(e)}")
 
 @app.post("/api/recommendations/train")
 async def train_model():
     """
     Entrena el modelo de recomendaciones.
-    TODO: Implementar entrenamiento real
+    Combina Content-Based y Collaborative Filtering.
     """
-    return JSONResponse({
-        "success": True,
-        "message": "Modelo entrenado (pendiente implementación)"
-    })
+    try:
+        recommendation_service.train()
+        
+        # Evaluar precisión
+        accuracy = recommendation_service.evaluate_accuracy()
+        accuracy_percent = accuracy * 100
+        
+        return JSONResponse({
+            "success": True,
+            "message": "Modelo entrenado exitosamente",
+            "accuracy": accuracy,
+            "accuracy_percent": round(accuracy_percent, 2),
+            "target_met": accuracy >= 0.80
+        })
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error al entrenar modelo: {str(e)}")
+
+@app.get("/api/recommendations/accuracy")
+async def get_accuracy():
+    """
+    Obtiene la precisión actual del modelo.
+    """
+    try:
+        if not recommendation_service.is_trained:
+            return JSONResponse({
+                "success": False,
+                "message": "Modelo no entrenado"
+            }, status_code=503)
+        
+        accuracy = recommendation_service.evaluate_accuracy()
+        accuracy_percent = accuracy * 100
+        
+        return JSONResponse({
+            "success": True,
+            "accuracy": accuracy,
+            "accuracy_percent": round(accuracy_percent, 2),
+            "target_met": accuracy >= 0.80,
+            "target": 0.80
+        })
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error al evaluar precisión: {str(e)}")
 
 if __name__ == "__main__":
     import uvicorn

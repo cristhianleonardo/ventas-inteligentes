@@ -11,6 +11,9 @@ RUN npm install
 # Copiar código fuente
 COPY frontend/ ./
 
+# Las variables de entorno VITE_ se pasan en runtime en modo dev
+# En producción, se deberían pasar en build time: ARG VITE_API_URL=...
+
 # Exponer puerto
 EXPOSE 3000
 

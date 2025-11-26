@@ -1,5 +1,13 @@
 FROM node:20-alpine
 
+# Instalar postgresql-client, bash, OpenSSL y librerías necesarias para Prisma
+RUN apk add --no-cache \
+    postgresql-client \
+    bash \
+    openssl \
+    libc6-compat \
+    ca-certificates
+
 WORKDIR /app
 
 # Copiar archivos de dependencias
@@ -11,8 +19,15 @@ RUN npm install
 # Copiar código fuente
 COPY backend/ ./
 
+# Copiar script de entrada
+COPY backend/docker-entrypoint.sh /usr/local/bin/
+RUN chmod +x /usr/local/bin/docker-entrypoint.sh
+
 # Exponer puerto
 EXPOSE 3001
+
+# Usar script de entrada
+ENTRYPOINT ["docker-entrypoint.sh"]
 
 # Comando por defecto (puede ser sobrescrito en docker-compose)
 CMD ["npm", "run", "dev"]

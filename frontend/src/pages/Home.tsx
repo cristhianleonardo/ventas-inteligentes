@@ -1,8 +1,33 @@
 import { Link } from 'react-router-dom';
 import { useAuthStore } from '../store/authStore';
+import { useQuery } from '@tanstack/react-query';
+import { recommendationService } from '../services/recommendation.service';
+import { productService } from '../services/product.service';
 
 export default function Home() {
-  const { isAuthenticated } = useAuthStore();
+  const { isAuthenticated, user } = useAuthStore();
+  
+  // Obtener recomendaciones si el usuario está autenticado
+  const { data: recommendationsData } = useQuery({
+    queryKey: ['recommendations', user?.id],
+    queryFn: () => recommendationService.getRecommendations(user!.id, 8),
+    enabled: !!isAuthenticated && !!user?.id,
+  });
+
+  // Obtener detalles de productos recomendados
+  const recommendedProductIds = recommendationsData?.map((r: any) => r.product_id) || [];
+  const { data: recommendedProducts } = useQuery({
+    queryKey: ['recommended-products', recommendedProductIds],
+    queryFn: async () => {
+      const products = await Promise.all(
+        recommendedProductIds.map((id: string) =>
+          productService.getProductById(id).catch(() => null)
+        )
+      );
+      return products.filter((p) => p !== null).map((p: any) => p.product);
+    },
+    enabled: recommendedProductIds.length > 0,
+  });
   return (
     <div className="space-y-12">
       {/* Hero Section */}
@@ -53,12 +78,50 @@ export default function Home() {
       {/* Recommendations Preview */}
       <section className="card">
         <h2 className="text-2xl font-bold mb-4">Productos Recomendados para Ti</h2>
-        <p className="text-gray-600 mb-4">
-          Inicia sesión para ver recomendaciones personalizadas basadas en tus preferencias
-        </p>
-        <Link to="/products" className="text-primary-600 hover:underline">
-          Ver todos los productos →
-        </Link>
+        {isAuthenticated && recommendedProducts && recommendedProducts.length > 0 ? (
+          <>
+            <p className="text-gray-600 mb-4">
+              Basado en tus preferencias y comportamiento de compra
+            </p>
+            <div className="grid md:grid-cols-4 gap-4 mb-4">
+              {recommendedProducts.slice(0, 4).map((product: any) => (
+                <Link
+                  key={product.id}
+                  to={`/products/${product.id}`}
+                  className="border rounded-lg p-3 hover:shadow-md transition-shadow"
+                >
+                  {product.imageUrl ? (
+                    <img
+                      src={product.imageUrl}
+                      alt={product.name}
+                      className="w-full h-32 object-cover rounded mb-2"
+                    />
+                  ) : (
+                    <div className="w-full h-32 bg-gray-200 rounded mb-2 flex items-center justify-center">
+                      <span className="text-gray-400 text-xs">Sin imagen</span>
+                    </div>
+                  )}
+                  <h3 className="font-semibold text-sm mb-1">{product.name}</h3>
+                  <p className="text-primary-600 font-bold">${product.price.toFixed(2)}</p>
+                </Link>
+              ))}
+            </div>
+            <Link to="/products" className="text-primary-600 hover:underline">
+              Ver todos los productos →
+            </Link>
+          </>
+        ) : (
+          <>
+            <p className="text-gray-600 mb-4">
+              {isAuthenticated
+                ? 'Aún no hay suficientes datos para recomendaciones personalizadas. ¡Explora productos!'
+                : 'Inicia sesión para ver recomendaciones personalizadas basadas en tus preferencias'}
+            </p>
+            <Link to="/products" className="text-primary-600 hover:underline">
+              Ver todos los productos →
+            </Link>
+          </>
+        )}
       </section>
     </div>
   );

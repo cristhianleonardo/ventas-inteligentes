@@ -26,11 +26,8 @@ Este proyecto utiliza una arquitectura **monorepo** con tres servicios principal
 
 ### Prerrequisitos
 
-- Node.js 20+
-- Python 3.11+
-- Docker y Docker Compose
-- PostgreSQL 15+ (o usar Docker)
-- Redis (o usar Docker)
+- **Docker y Docker Compose** (solo necesitas esto)
+- Node.js 20+ y Python 3.11+ (solo si desarrollas localmente sin Docker)
 
 ### Instalación
 
@@ -51,27 +48,43 @@ cp .env.example .env
 npm run setup
 ```
 
-4. **Iniciar servicios con Docker**
+4. **Iniciar TODO con Docker Compose** ⭐ (Forma estándar en empresas)
 ```bash
+# Un solo comando inicia TODO: PostgreSQL, Redis, Backend, Frontend y AI Service
+npm run docker:up:all
+
+# O en segundo plano:
 npm run docker:up
 ```
 
-5. **Ejecutar migraciones de base de datos**
+**¡Eso es todo!** El proyecto estará disponible en:
+- Frontend: http://localhost:3000
+- Backend API: http://localhost:3001
+- AI Service: http://localhost:8000
+
+5. **Configuración inicial** (solo primera vez, después de que los servicios estén corriendo)
 ```bash
+# Ejecutar migraciones de base de datos
 cd backend
 npx prisma migrate dev
 npx prisma generate
+cd ..
+
+# Crear usuario admin y productos de ejemplo
+npm run create-admin
+npm run import-products -- 6
 ```
 
-6. **Iniciar servicios en desarrollo**
-```bash
-# Desde la raíz del proyecto
-npm run dev
+---
 
-# O por separado:
-npm run dev:frontend  # Frontend en http://localhost:3000
-npm run dev:backend   # Backend en http://localhost:3001
-# AI Service: python -m uvicorn ai-service.app.main:app --reload --port 8000
+### Alternativa: Desarrollo Local (solo si prefieres ejecutar Node/Python localmente)
+
+```bash
+# 1. Solo infraestructura con Docker (PostgreSQL y Redis)
+npm run docker:up
+
+# 2. Servicios de aplicación localmente
+npm run dev  # Inicia frontend, backend y AI service
 ```
 
 ## 📁 Estructura del Proyecto
@@ -90,12 +103,25 @@ Ver [ESTRUCTURA_PROYECTO.md](./ESTRUCTURA_PROYECTO.md) para detalles completos.
 
 ## 🛠️ Scripts Disponibles
 
-- `npm run dev` - Inicia frontend y backend en desarrollo
+### ⭐ Docker Compose (Forma Estándar en Empresas)
+- `npm run docker:up:all` - **Inicia TODO** (PostgreSQL, Redis, Backend, Frontend, AI) - **UN SOLO COMANDO**
+- `npm run docker:up` - Inicia servicios en segundo plano
+- `npm run docker:down` - Detiene todos los servicios
+- `npm run docker:logs` - Ver logs de todos los servicios
+- `npm run docker:build` - Reconstruir imágenes Docker
+
+### Desarrollo Local (Alternativa)
+- `npm run docker:up` - Solo infraestructura (PostgreSQL y Redis)
+- `npm run dev` - Inicia frontend, backend y servicio de IA localmente
 - `npm run dev:frontend` - Solo frontend
 - `npm run dev:backend` - Solo backend
+- `npm run dev:ai` - Solo servicio de IA
+
+### Utilidades
+- `npm run create-admin` - Crea usuario admin por defecto
+- `npm run import-products` - Importa productos de ejemplo
+- `npm run train:ai` - Entrena el modelo de IA manualmente
 - `npm run build` - Build de producción
-- `npm run docker:up` - Inicia servicios Docker
-- `npm run docker:down` - Detiene servicios Docker
 
 ## 📊 Requisitos del Proyecto
 

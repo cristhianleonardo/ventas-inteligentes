@@ -2,6 +2,8 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { productService } from '../services/product.service';
 import { useCartStore } from '../store/cartStore';
+import { recommendationService } from '../services/recommendation.service';
+import { Link } from 'react-router-dom';
 
 export default function ProductDetail() {
   const { id } = useParams();
@@ -12,6 +14,28 @@ export default function ProductDetail() {
     queryKey: ['product', id],
     queryFn: () => productService.getProductById(id!),
     enabled: !!id,
+  });
+
+  // Obtener productos similares
+  const { data: similarData } = useQuery({
+    queryKey: ['similar-products', id],
+    queryFn: () => recommendationService.getSimilarProducts(id!, 4),
+    enabled: !!id,
+  });
+
+  // Obtener detalles de productos similares
+  const similarProductIds = similarData?.map((p: any) => p.product_id) || [];
+  const { data: similarProducts } = useQuery({
+    queryKey: ['similar-products-details', similarProductIds],
+    queryFn: async () => {
+      const products = await Promise.all(
+        similarProductIds.map((productId: string) =>
+          productService.getProductById(productId).catch(() => null)
+        )
+      );
+      return products.filter((p) => p !== null).map((p: any) => p.product);
+    },
+    enabled: similarProductIds.length > 0,
   });
 
   const handleAddToCart = async () => {
@@ -133,6 +157,38 @@ export default function ProductDetail() {
           )}
         </div>
       </div>
+
+      {/* Productos Similares */}
+      {similarProducts && similarProducts.length > 0 && (
+        <div className="mt-12">
+          <h2 className="text-2xl font-bold mb-6">Productos Similares</h2>
+          <div className="grid md:grid-cols-4 gap-6">
+            {similarProducts.map((similarProduct: any) => (
+              <Link
+                key={similarProduct.id}
+                to={`/products/${similarProduct.id}`}
+                className="card hover:shadow-lg transition-shadow"
+              >
+                {similarProduct.imageUrl ? (
+                  <img
+                    src={similarProduct.imageUrl}
+                    alt={similarProduct.name}
+                    className="h-48 w-full object-cover rounded mb-4"
+                  />
+                ) : (
+                  <div className="h-48 bg-gray-200 rounded mb-4 flex items-center justify-center">
+                    <span className="text-gray-400">Sin imagen</span>
+                  </div>
+                )}
+                <h3 className="font-semibold mb-2">{similarProduct.name}</h3>
+                <p className="text-xl font-bold text-primary-600">
+                  ${similarProduct.price.toFixed(2)}
+                </p>
+              </Link>
+            ))}
+          </div>
+        </div>
+      )}
     </div>
   );
 }

@@ -35,6 +35,12 @@ export default function AdminDashboard() {
           <h2 className="text-xl font-semibold mb-2">Control de Inventario</h2>
           <p className="text-gray-600">Visualizar y controlar el stock</p>
         </Link>
+
+        <Link to="/admin/ai-model" className="card hover:shadow-lg transition-shadow">
+          <div className="text-4xl mb-4">🤖</div>
+          <h2 className="text-xl font-semibold mb-2">Modelo de IA</h2>
+          <p className="text-gray-600">Entrenar y monitorear el modelo de recomendaciones</p>
+        </Link>
       </div>
     </div>
   );

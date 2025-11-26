@@ -8,16 +8,21 @@
     "backend"
   ],
   "scripts": {
-    "dev": "concurrently \"npm run dev --workspace=backend\" \"npm run dev --workspace=frontend\"",
+    "dev": "concurrently \"npm run dev --workspace=backend\" \"npm run dev --workspace=frontend\" \"npm run dev:ai\"",
     "dev:frontend": "npm run dev --workspace=frontend",
     "dev:backend": "npm run dev --workspace=backend",
     "build": "npm run build --workspace=frontend && npm run build --workspace=backend",
-    "docker:up": "docker-compose -f docker/docker-compose.yml up -d",
-    "docker:down": "docker-compose -f docker/docker-compose.yml down",
-    "docker:logs": "docker-compose -f docker/docker-compose.yml logs -f",
+    "docker:up": "docker compose -f ./docker/docker-compose.yml up -d",
+    "docker:up:all": "docker compose -f ./docker/docker-compose.yml up",
+    "docker:down": "docker compose -f ./docker/docker-compose.yml down",
+    "docker:logs": "docker compose -f ./docker/docker-compose.yml logs -f",
+    "docker:build": "docker compose -f ./docker/docker-compose.yml build",
     "setup": "npm install && npm install --workspace=frontend && npm install --workspace=backend",
     "create-env": "node scripts/create-env.js",
-    "create-admin": "cd backend && node ../scripts/create-admin.js"
+    "create-admin": "cd backend && node ../scripts/create-admin.js",
+    "import-products": "node scripts/import-products-simple.js",
+    "dev:ai": "cd ai-service && python start.py",
+    "train:ai": "cd ai-service && python test_train.py"
   },
   "devDependencies": {
     "concurrently": "^8.2.2"
