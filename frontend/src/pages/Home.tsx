@@ -1,6 +1,8 @@
 import { Link } from 'react-router-dom';
+import { useAuthStore } from '../store/authStore';
 
 export default function Home() {
+  const { isAuthenticated } = useAuthStore();
   return (
     <div className="space-y-12">
       {/* Hero Section */}
@@ -15,9 +17,11 @@ export default function Home() {
           <Link to="/products" className="btn btn-primary text-lg px-8 py-3">
             Explorar Productos
           </Link>
-          <Link to="/login" className="btn btn-secondary text-lg px-8 py-3">
-            Iniciar Sesión
-          </Link>
+          {!isAuthenticated && (
+            <Link to="/login" className="btn btn-secondary text-lg px-8 py-3">
+              Iniciar Sesión
+            </Link>
+          )}
         </div>
       </section>
 

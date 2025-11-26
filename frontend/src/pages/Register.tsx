@@ -2,12 +2,13 @@ import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../store/authStore';
 
-export default function Login() {
+export default function Register() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [name, setName] = useState('');
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-  const login = useAuthStore((state) => state.login);
+  const register = useAuthStore((state) => state.register);
   const navigate = useNavigate();
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -16,11 +17,10 @@ export default function Login() {
     setIsLoading(true);
 
     try {
-      await login(email, password);
-      // Forzar actualización del store
-      window.location.href = '/';
+      await register(email, password, name);
+      navigate('/login');
     } catch (err: any) {
-      setError(err.response?.data?.error?.message || 'Error al iniciar sesión');
+      setError(err.response?.data?.error?.message || 'Error al registrarse');
     } finally {
       setIsLoading(false);
     }
@@ -28,8 +28,21 @@ export default function Login() {
 
   return (
     <div className="max-w-md mx-auto card">
-      <h1 className="text-2xl font-bold mb-6 text-center">Iniciar Sesión</h1>
+      <h1 className="text-2xl font-bold mb-6 text-center">Registrarse</h1>
       <form onSubmit={handleSubmit} className="space-y-4">
+        <div>
+          <label htmlFor="name" className="block mb-2 font-medium">
+            Nombre
+          </label>
+          <input
+            id="name"
+            type="text"
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            className="input"
+            required
+          />
+        </div>
         <div>
           <label htmlFor="email" className="block mb-2 font-medium">
             Email
@@ -54,6 +67,7 @@ export default function Login() {
             onChange={(e) => setPassword(e.target.value)}
             className="input"
             required
+            minLength={6}
           />
         </div>
         {error && (
@@ -66,13 +80,13 @@ export default function Login() {
           className="btn btn-primary w-full"
           disabled={isLoading}
         >
-          {isLoading ? 'Iniciando sesión...' : 'Iniciar Sesión'}
+          {isLoading ? 'Registrando...' : 'Registrarse'}
         </button>
       </form>
       <p className="mt-4 text-center text-sm text-gray-600">
-        ¿No tienes cuenta?{' '}
-        <Link to="/register" className="text-primary-600 hover:underline">
-          Regístrate aquí
+        ¿Ya tienes cuenta?{' '}
+        <Link to="/login" className="text-primary-600 hover:underline">
+          Inicia sesión aquí
         </Link>
       </p>
     </div>
